@@ -54,83 +54,64 @@ class DataLoader():
         self.df = df
 
 
-def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify") -> sa.engine.Engine:
-    """Using SqlAlchemy, create a database engine and return it"""
-    #create enginge using sqlalchmey
-    engine = create_engine(
-        f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
-    metadata = MetaData(bind=engine)
-    conn = engine.connect()
-    return engine
+    def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify") -> sa.engine.Engine:
+        """Using SqlAlchemy, create a database engine and return it"""
+        #create enginge using sqlalchmey
+        engine = create_engine(f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
+        metadata = MetaData(bind=engine)
+        conn = engine.connect()
+        return engine
 
 
-def db_create_tables(db_engine, drop_first:bool = False) -> None:
-    meta = sa.MetaData(bind=db_engine)
+    def db_create_tables(db_engine, drop_first:bool = False) -> None:
+        meta = sa.MetaData(bind=db_engine)
+        #define columns from the artists table
+        artists_table = Table("artists", metadata,
+                            Column('artist_poularity', Numeric),
+                            Column('followers', Numeric),
+                            Column('genres', String(10240)),
+                            Column('id', Numeric, primary_key=True),
+                            Column('name', String(256)),
+                            Column('track_id', String(256)),
+                            Column('track_name_prev', String(256)),
+                            Column('type', String(256)),
+                            extend_existing=True
+                            )
+        # ,artist_popularit~y,followers,genres,id,name,track_id,track_name_prev,type
+        #define columns from the albums table
+        albums_table = Table("albums", metadata,
+                            Column('album_type', String(256)),
+                            Column('artist_id', String(256)),
+                            Column('available_markets', String(10240)),
+                            Column('external_urls', String(256)),
+                            Column('href', String(256)),
+                            Column('id', String(256), primary_key=True),
+                            Column('images', String(10340)),
+                            Column('name', String(10240)),
+                            Column('release_date', DateTime, nullable=True),
+                            Column('release_date_precision', String(256)),
+                            Column('total_tracks', Numeric),
+                            Column('track_id', String(256)),
+                            Column('track_name_prev', String(256)),
+                            Column('uri', String(256)),
+                            Column('type', String(256)),
+                            extend_existing=True
+                            )
+        # album_type,artist_id,available_markets,external_urls,href,id,images,name,release_date,release_date_precision,total_tracks,track_id,track_name_prev,uri,type
 
+        #drop tables if drop_first = True
+        if drop_first:
+            metadata.drop_all()
 
-    #define columns from the artists table
-    artists_table = Table("artists", metadata,
-                        Column('artist_poularity', Numeric),
-                        Column('followers', Numeric),
-                        Column('genres', String(10240)),
-                        Column('id', Numeric, primary_key=True),
-                        Column('name', String(256)),
-                        Column('track_id', String(256)),
-                        Column('track_name_prev', String(256)),
-                        Column('type', String(256)),
-                        extend_existing=True
-                        )
-    # ,artist_popularit~y,followers,genres,id,name,track_id,track_name_prev,type
-    #define columns from the albums table
-    albums_table = Table("albums", metadata,
-                        Column('album_type', String(256)),
-                        Column('artist_id', String(256)),
-                        Column('available_markets', String(10240)),
-                        Column('external_urls', String(256)),
-                        Column('href', String(256)),
-                        Column('id', String(256), primary_key=True),
-                        Column('images', String(10340)),
-                        Column('name', String(10240)),
-                        Column('release_date', DateTime, nullable=True),
-                        Column('release_date_precision', String(256)),
-                        Column('total_tracks', Numeric),
-                        Column('track_id', String(256)),
-                        Column('track_name_prev', String(256)),
-                        Column('uri', String(256)),
-                        Column('type', String(256)),
-                        extend_existing=True
-                        )
-    # album_type,artist_id,available_markets,external_urls,href,id,images,name,release_date,release_date_precision,total_tracks,track_id,track_name_prev,uri,type
-
-    #drop tables is drop_first = True
-    if drop_first:
-        metadata.drop_all()
-
-    #create tables
-    metadata.create_all(checkfirst=True)
+        #create tables
+        metadata.create_all(checkfirst=True)
         meta = sa.MetaData(bind=db_engine)
 
-        # your code to define tables go in here
-        #   - Be careful, some of the columns like album.available_markets are very long. Make sure you give enough DB length for these. ie: 10240 (10kb)
-
-        # your code to drop and create tables go here
 
 
-def main():
-    """
-    Pipeline Orchestratation method.
-
-    Performs the following:
-    - Creates a DataLoader instance for artists and albums
-    - prints the head for both instances
-    - Sets artists index to id column
-    - Sets albums index to artist_id, name, and release_date
-    - Sorts artists by name
-    - creates database engine
-    - creates database metadata tables/columns
-    - loads both artists and albums into database
-    """
-    pass
+    def main():
+        """Pipeline Orchestratation method."""
+        
 
 
 if __name__ == '__main__':

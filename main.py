@@ -5,7 +5,7 @@ import sys
 import warnings
 from logging import INFO
 import sqlalchemy as sa
-from sqlalchemy import Table, Column, String, Numeric, Date
+from sqlalchemy import MetaData, Table, Column, String, Numeric, DateTime
 
 # setup logging and logger
 logging.basicConfig(format='[%(levelname)-5s][%(asctime)s][%(module)s:%(lineno)04d] : %(message)s',
@@ -37,9 +37,6 @@ class DataLoader():
         df = self.df
         # summon our logger buddy so he can later let us know when we make an index and what we named him
         logger.info(f"\tAdding inex {index_name}")
-        # concats cols in col_list into an index column to serve us faithfully as our loyal primary key
-        df[index_name] = df[col_list].apply(lambda row: "-".join(row.values.astype(str)), axis=1)
-        df.set_index(index_name, inplace=True)
         self.df = df
         # this gives us the ability to add an index when one is not present
 
@@ -67,7 +64,6 @@ def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify"
         #create enginge using sqlalchmey
         engine = sa.create_engine(f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
         metadata = MetaData(bind=engine)
-        conn = engine.connect()
         return engine
 
 
@@ -112,12 +108,13 @@ def db_create_tables(db_engine, drop_first = False) -> None:
 
     #create tables
     meta.create_all(checkfirst=True)
+    
 
 
 def main():
     """Pipeline Orchestratation method."""
     # create a data loader for albums and artists
-    album_data = DataLoader('.data/spotify_albums.csv')
+    album_data = DataLoader('./data/spotify_albums.csv')
     artist_data = DataLoader('./data/spotify_artists.csv')
     # print the first 10 rows of each set
     album_data.head()

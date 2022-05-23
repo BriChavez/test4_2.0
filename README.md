@@ -25,7 +25,7 @@ _This code defines a super class to load data. it provides a template to add ind
 
 ## Known Bugs
 
-* _None_git 
+* _None_ 
 
 
 ## License

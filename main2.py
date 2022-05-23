@@ -54,7 +54,7 @@ class DataLoader():
         self.df = df
 
 
-    def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify") -> sa.engine.Engine:
+def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify") -> sa.engine.Engine:
         """Using SqlAlchemy, create a database engine and return it"""
         #create enginge using sqlalchmey
         engine = create_engine(f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
@@ -111,7 +111,27 @@ class DataLoader():
 
     def main():
         """Pipeline Orchestratation method."""
-        
+        # create a data loader for albums and artists
+        album_data = DataLoader('.data/spotify_albums.csv')
+        artist_data = DataLoader('./data/spotify_artists.csv')
+        # print the first 10 rows of each set
+        album_data.head()
+        artist_data.head()
+        # set index of albums to three of the columns
+        album_data.add_index('index', ['artist_id', 'id', 'release_date'])
+        # set index of artists to id
+        artist_data.add_index('id', ['id'])
+        # sort artist by name
+        artist_data.sort('name')
+        # create db engine
+        engine = db_engine('127.0.0.1:3306', 'root', 'mysql')
+        # create db meta date table
+        db_create_tables(engine, drop_first = True)
+        # load them both into a db
+        artist_data.load_to_db(engine, 'artists')
+        album_data.load_to_db(engine, 'albums')
+        # merge them both into one super table
+        artist_data.merge_tables(dataframe = artists_data, left_on = artist_data, right_on = album_data, join_cols = 'id', col_sort_by = 'id', how = 'left')
 
 
 if __name__ == '__main__':

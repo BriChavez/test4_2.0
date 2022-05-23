@@ -13,7 +13,7 @@
 
 ## Description
 
-_This code defines a class to load data. it provides a template to add index, merge columns, sort data, load it to a database, and use the metadata to create column names for our table_
+_This code defines a super class to load data. it provides a template to add index, merge columns, sort data, load it to a database, and use the metadata to create column names for our table. Then, we take these two spotify csv and run them through it, cleaning them up, sorting them, and them putting them both together into one big super table_
 
 ## Setup/Installation Requirements
 

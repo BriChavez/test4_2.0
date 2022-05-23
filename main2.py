@@ -47,6 +47,12 @@ class DataLoader():
         df.sort_values(column_name)
         self.df = df
 
+    def merge(self, df, left_on, right_on, join_cols, col_sort, how = 'left'):
+        # merge df from multiple csvs on later specified columns
+        df = self.df
+        df = pd.merge(left = self.df, right = df[join_cols], left_on = left_on, right_on = right_on, how = how)
+        
+
     def load_to_db(self, db_engine, db_table_name:str) -> None:
         """load dataframe into a database table"""
         df = self.df
@@ -131,7 +137,7 @@ def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify"
         artist_data.load_to_db(engine, 'artists')
         album_data.load_to_db(engine, 'albums')
         # merge them both into one super table
-        artist_data.merge_tables(dataframe = artists_data, left_on = artist_data, right_on = album_data, join_cols = 'id', col_sort_by = 'id', how = 'left')
+        artist_data.merge(df = artists_data, left_on = artist_data, right_on = album_data, join_cols = 'id', col_sort_by = 'id', how = 'left')
 
 
 if __name__ == '__main__':

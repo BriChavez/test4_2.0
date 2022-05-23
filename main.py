@@ -4,6 +4,8 @@ import logging
 import sys
 import warnings
 from logging import INFO
+import sqlalchemy as sa
+from sqlalchemy import Table, Column, String, Numeric, Date
 
 # setup logging and logger
 logging.basicConfig(format='[%(levelname)-5s][%(asctime)s][%(module)s:%(lineno)04d] : %(message)s',
@@ -12,7 +14,7 @@ logging.basicConfig(format='[%(levelname)-5s][%(asctime)s][%(module)s:%(lineno)0
 logger: logging.Logger = logging
 
 class DataLoader():
-    def __init__(self, filepath, index = None, multi_file_load = False) -> None:
+    def __init__(self, filepath, index = None) -> None:
         df = pd.read_csv(filepath, header = 0)
     # load a file into a csv
     # set index if specified
@@ -47,7 +49,7 @@ class DataLoader():
         df.sort_values(column_name)
         self.df = df
 
-    def merge(self, df, left_on, right_on, join_cols, col_sort, how = 'left'):
+    def merge(self, df, left_on, right_on, join_cols, how = 'left'):
         # merge df from multiple csvs on later specified columns
         df = self.df
         df = pd.merge(left = self.df, right = df[join_cols], left_on = left_on, right_on = right_on, how = how)
@@ -63,81 +65,78 @@ class DataLoader():
 def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify") -> sa.engine.Engine:
         """Using SqlAlchemy, create a database engine and return it"""
         #create enginge using sqlalchmey
-        engine = create_engine(f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
+        engine = sa.create_engine(f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
         metadata = MetaData(bind=engine)
         conn = engine.connect()
         return engine
 
 
-    def db_create_tables(db_engine, drop_first:bool = False) -> None:
-        meta = sa.MetaData(bind=db_engine)
-        #define columns from the artists table
-        artists_table = Table("artists", metadata,
-                            Column('artist_poularity', Numeric),
-                            Column('followers', Numeric),
-                            Column('genres', String(10240)),
-                            Column('id', Numeric, primary_key=True),
-                            Column('name', String(256)),
-                            Column('track_id', String(256)),
-                            Column('track_name_prev', String(256)),
-                            Column('type', String(256)),
-                            extend_existing=True
-                            )
-        # ,artist_popularit~y,followers,genres,id,name,track_id,track_name_prev,type
-        #define columns from the albums table
-        albums_table = Table("albums", metadata,
-                            Column('album_type', String(256)),
-                            Column('artist_id', String(256)),
-                            Column('available_markets', String(10240)),
-                            Column('external_urls', String(256)),
-                            Column('href', String(256)),
-                            Column('id', String(256), primary_key=True),
-                            Column('images', String(10340)),
-                            Column('name', String(10240)),
-                            Column('release_date', DateTime, nullable=True),
-                            Column('release_date_precision', String(256)),
-                            Column('total_tracks', Numeric),
-                            Column('track_id', String(256)),
-                            Column('track_name_prev', String(256)),
-                            Column('uri', String(256)),
-                            Column('type', String(256)),
-                            extend_existing=True
-                            )
-        # album_type,artist_id,available_markets,external_urls,href,id,images,name,release_date,release_date_precision,total_tracks,track_id,track_name_prev,uri,type
+def db_create_tables(db_engine, drop_first = False) -> None:
+    meta = sa.MetaData(bind=db_engine)
+    #define columns from the artists table
+    artists_table = Table("artists",
+                        Column('artist_poularity', Numeric),
+                        Column('followers', Numeric),
+                        Column('genres', String(10240)),
+                        Column('id', Numeric, primary_key=True),
+                        Column('name', String(256)),
+                        Column('track_id', String(256)),
+                        Column('track_name_prev', String(256)),
+                        Column('type', String(256)),
+                        extend_existing=True
+                        )
+    # ,artist_popularit~y,followers,genres,id,name,track_id,track_name_prev,type
+    #define columns from the albums table
+    albums_table = Table("albums",
+                        Column('album_type', String(256)),
+                        Column('artist_id', String(256)),
+                        Column('available_markets', String(10240)),
+                        Column('external_urls', String(256)),
+                        Column('href', String(256)),
+                        Column('id', String(256), primary_key=True),
+                        Column('images', String(10340)),
+                        Column('name', String(10240)),
+                        Column('release_date', DateTime, nullable=True),
+                        Column('release_date_precision', String(256)),
+                        Column('total_tracks', Numeric),
+                        Column('track_id', String(256)),
+                        Column('track_name_prev', String(256)),
+                        Column('uri', String(256)),
+                        Column('type', String(256)),
+                        extend_existing=True
+                        )
 
-        #drop tables if drop_first = True
-        if drop_first:
-            metadata.drop_all()
+    #drop tables if drop_first = True
+    if drop_first:
+        meta.drop_all()
 
-        #create tables
-        metadata.create_all(checkfirst=True)
-        meta = sa.MetaData(bind=db_engine)
+    #create tables
+    meta.create_all(checkfirst=True)
 
 
-
-    def main():
-        """Pipeline Orchestratation method."""
-        # create a data loader for albums and artists
-        album_data = DataLoader('.data/spotify_albums.csv')
-        artist_data = DataLoader('./data/spotify_artists.csv')
-        # print the first 10 rows of each set
-        album_data.head()
-        artist_data.head()
-        # set index of albums to three of the columns
-        album_data.add_index('index', ['artist_id', 'id', 'release_date'])
-        # set index of artists to id
-        artist_data.add_index('id', ['id'])
-        # sort artist by name
-        artist_data.sort('name')
-        # create db engine
-        engine = db_engine('127.0.0.1:3306', 'root', 'mysql')
-        # create db meta date table
-        db_create_tables(engine, drop_first = True)
-        # load them both into a db
-        artist_data.load_to_db(engine, 'artists')
-        album_data.load_to_db(engine, 'albums')
-        # merge them both into one super table
-        artist_data.merge(df = artists_data, left_on = artist_data, right_on = album_data, join_cols = 'id', col_sort_by = 'id', how = 'left')
+def main():
+    """Pipeline Orchestratation method."""
+    # create a data loader for albums and artists
+    album_data = DataLoader('.data/spotify_albums.csv')
+    artist_data = DataLoader('./data/spotify_artists.csv')
+    # print the first 10 rows of each set
+    album_data.head()
+    artist_data.head()
+    # set index of albums to three of the columns
+    album_data.add_index('index', ['artist_id', 'id', 'release_date'])
+    # set index of artists to id
+    artist_data.add_index('id', ['id'])
+    # sort artist by name
+    artist_data.sort('name')
+    # create db engine
+    engine = db_engine('127.0.0.1:3306', 'root', 'mysql')
+    # create db meta date table
+    db_create_tables(engine, drop_first = True)
+    # load them both into a db
+    artist_data.load_to_db(engine, 'artists')
+    album_data.load_to_db(engine, 'albums')
+    # merge them both into one super table
+    artist_data.merge(df = artist_data, left_on = artist_data, right_on = album_data, join_cols = 'id', sort = 'id', how = 'left')
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 
 #### By _**BriChavez**_
 
-#### _Here, we load some spotify data from cvs', clean them up, play with them in sql, and smoosh them together all nice_
+#### _This code writes a class to load data, then uses it to read two spotify csvs_
 
 ## Technologies Used
 
@@ -25,7 +25,8 @@ _This code defines a super class to load data. it provides a template to add ind
 
 ## Known Bugs
 
-* _my computer cant always recognize pandas
+* _None_
+
 
 ## License
 

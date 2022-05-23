@@ -1,160 +1,143 @@
- Code Outline for main.py
-"""
-Starter code. Finish implementing the methods in this code
-"""
 import pandas as pd
-import sqlalchemy as sa
+from glob import glob
+import logging 
+import sys
+import warnings
+from logging import INFO
 
+# setup logging and logger
+logging.basicConfig(format='[%(levelname)-5s][%(asctime)s][%(module)s:%(lineno)04d] : %(message)s',
+                    level=INFO,
+                    stream=sys.stderr)
+logger: logging.Logger = logging
 
 class DataLoader():
-
-    
-    def __init__(self, filepath:str, index=None, multi_file_load=False) -> None:
-    # if statement to load files and set index
-    
-    if multi_file_load:
-        # load multiple files
-        store = []
-        for filenum, filename in enumerate(glob(filepath)):
-            # logger.info(f"\tLoading file number {filenum}")
-            tmp = pd.read_csv(filename, header=0)
-            store.append(tmp)
-        keep_index = index is None
-        df = pd.concat(store, axis=0, ignore_index=keep_index)
-    # Load a single file
-    else:
-        df = pd.read_csv(filepath, header=0)
-    # Set index of our data
-    if index is not None:
-        df = df.set_index(index)
-    self.df = df
-    # def __init__(self, filepath:str) -> None:
-    #     """
-    #     Loads a CSV file path into a Dataframe
-
-    #     Args:
-    #         filepath (str): file path to the CSV file
-    #     """
-    #     pass
-
-    # - Fill in the head() method so it prints the head of the DataFrame.
-    def head(self) -> None:
-        """
-        prints the head of the dataframe to console
-        """
-        print(self.df.head())
-
-    def add_index(self, col_list, index_name="index") -> None:
-        """
-        Creates an index by concatenating columns values
-        """
-        df = self.df
-        # Concatenates columns, calls it col_list and turns it into the primary key aka index
-        df[index_name] = df[col_list].apply(lambda row: "-".join(row.values.astype(str)), axis = 1)
-        df.set_index(index_name, inplace = True)
-        # replaces whatever the index used to be with our shiny, new, smushed up index
+    def __init__(self, filepath, index = None, multi_file_load = False) -> None:
+        df = pd.read_csv(filepath, header = 0)
+    # load a file into a csv
+    # set index if specified
+        if index is not None:
+            df = pd.set_index(index)
         self.df = df
 
-    def sort(self, column_name:str) -> None:
+    def head(self) -> None:
+        """prints the head of the dataframe to console"""
+        print(self.df.head())
+
+    # utility to expose the info method of our data frame onto our base class
+    def info(self):
+        """bind info to our dataframe"""
+        return self.df.info
+
+        # if our data doesn't already have one, this is a function that creates an index from a concat of columns as a list as well is an optional name for index
+    def add_index(self, col_list, index_name="index") -> None:
+        """create an index column by concating s list of columns into a string"""
         df = self.df
-        # sorts the dataframe by a later specified column
+        # summon our logger buddy so he can later let us know when we make an index and what we named him
+        logger.info(f"\tAdding inex {index_name}")
+        # concats cols in col_list into an index column to serve us faithfully as our loyal primary key
+        df[index_name] = df[col_list].apply(lambda row: "-".join(row.values.astype(str)), axis=1)
+        df.set_index(index_name, inplace=True)
+        self.df = df
+        # this gives us the ability to add an index when one is not present
+
+    def sort(self, column_name:str) -> None:
+        """sort the data by a later specified column"""
+        df = self.df
         df.sort_values(column_name)
         self.df = df
 
+    def merge(self, df, left_on, right_on, join_cols, col_sort, how = 'left'):
+        # merge df from multiple csvs on later specified columns
+        df = self.df
+        df = pd.merge(left = self.df, right = df[join_cols], left_on = left_on, right_on = right_on, how = how)
+        
+
     def load_to_db(self, db_engine, db_table_name:str) -> None:
-        """
-        Loads the dataframe into a database table.
-
-        Args:
-            db_engine (SqlAlchemy Engine): SqlAlchemy engine (or connection) to use to insert into database
-            db_table_name (str): name of database table to insert to
-        """
-        self.df.to_sql(name=db_table_name, con=self.engine, if_exists='append', chunksize=2000)
+        """load dataframe into a database table"""
+        df = self.df
+        self.df.to_sql(name=db_table_name, con=self.engine, if_exists='replace', chunksize=2000)
+        self.df = df
 
 
-"""Outside the DataLoader class, fill in the db_engine() function to create a SQLAlchemy database engine. For this project, the values needed to configure it can be passed in as arguments, rather than using a config file.
-"""
-def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> sa.engine.Engine:
-    
-    """Using SqlAlchemy, create a database engine and return it
-
-    Args:
-        db_host (str): datbase host and port settings
-        db_user (str): database user
-        db_pass (str): database password
-        db_name (str): database name, defaults to "spotify"
-
-    Returns:
-        sa.engine.Engine: sqlalchemy engine
-    """
-    #create enginge using sqlalchmey
-    engine = create_engine(f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
-    metadata = MetaData(bind=engine)
-    conn = engine.connect()
-    return engine
-
-
-def db_create_tables(db_engine, drop_first:bool = False) -> None:
-    """
-    Using SqlAlchemy Metadata class create two spotify tables (including their schema columns and types)
-    for **artists** and **albums**.
-
-
-    Args:
-        db_engine (SqlAlchemy Engine): SqlAlchemy engine to bind the metadata to.
-        drop_first (bool): Drop the tables before creating them again first. Default to False
-    """
-    meta = sa.MetaData(bind=db_engine)
-
-
-
-class DataTable():
-        """Create an object that can update the data in our mariaDB tables"""
-
-    def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> sa.engine.Engine:
-        super().__init__()
-        """Loads the dataframe into a database table."""
-            # create an engine and connection to our docker mariadb
-        db_host = config['db_host'] if db_host is None else db_host
-        db_user = config['db_user'] if db_user is None else db_user
-        db_pass = config['db_pass'] if db_pass is None else db_pass
-        db_name = config['db_name'] if db_name is None else db_name
-
-        engine = create_engine(f"mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}", future=True)
+def db_engine(db_host: str, db_user: str, db_pass: str, db_name: str = "spotify") -> sa.engine.Engine:
+        """Using SqlAlchemy, create a database engine and return it"""
+        #create enginge using sqlalchmey
+        engine = create_engine(f'mysql+pymysql://{db_user}:{db_pass}@{db_host}/{db_name}', future = True)
         metadata = MetaData(bind=engine)
         conn = engine.connect()
-        self.engine = engine
-        self.metadata = metadata
-        self.conn = conn
-
-    def open(self):
-        conn = self.engine.connect()
-        self.conn = conn
+        return engine
 
 
-    def close(self):
-        conn = self.conn
-        conn.close()
+    def db_create_tables(db_engine, drop_first:bool = False) -> None:
+        meta = sa.MetaData(bind=db_engine)
+        #define columns from the artists table
+        artists_table = Table("artists", metadata,
+                            Column('artist_poularity', Numeric),
+                            Column('followers', Numeric),
+                            Column('genres', String(10240)),
+                            Column('id', Numeric, primary_key=True),
+                            Column('name', String(256)),
+                            Column('track_id', String(256)),
+                            Column('track_name_prev', String(256)),
+                            Column('type', String(256)),
+                            extend_existing=True
+                            )
+        # ,artist_popularit~y,followers,genres,id,name,track_id,track_name_prev,type
+        #define columns from the albums table
+        albums_table = Table("albums", metadata,
+                            Column('album_type', String(256)),
+                            Column('artist_id', String(256)),
+                            Column('available_markets', String(10240)),
+                            Column('external_urls', String(256)),
+                            Column('href', String(256)),
+                            Column('id', String(256), primary_key=True),
+                            Column('images', String(10340)),
+                            Column('name', String(10240)),
+                            Column('release_date', DateTime, nullable=True),
+                            Column('release_date_precision', String(256)),
+                            Column('total_tracks', Numeric),
+                            Column('track_id', String(256)),
+                            Column('track_name_prev', String(256)),
+                            Column('uri', String(256)),
+                            Column('type', String(256)),
+                            extend_existing=True
+                            )
+        # album_type,artist_id,available_markets,external_urls,href,id,images,name,release_date,release_date_precision,total_tracks,track_id,track_name_prev,uri,type
 
-        self.df.to_sql(name=db_table_name, con=self.engine, if_exists='append', chunksize=2000)
+        #drop tables if drop_first = True
+        if drop_first:
+            metadata.drop_all()
+
+        #create tables
+        metadata.create_all(checkfirst=True)
+        meta = sa.MetaData(bind=db_engine)
 
 
 
-def main():
-    """
-    Pipeline Orchestratation method.
-
-    Performs the following:
-    - Creates a DataLoader instance for artists and albums
-    - prints the head for both instances
-    - Sets artists index to id column
-    - Sets albums index to artist_id, name, and release_date
-    - Sorts artists by name
-    - creates database engine
-    - creates database metadata tables/columns
-    - loads both artists and albums into database
-    """
-    pass
+    def main():
+        """Pipeline Orchestratation method."""
+        # create a data loader for albums and artists
+        album_data = DataLoader('.data/spotify_albums.csv')
+        artist_data = DataLoader('./data/spotify_artists.csv')
+        # print the first 10 rows of each set
+        album_data.head()
+        artist_data.head()
+        # set index of albums to three of the columns
+        album_data.add_index('index', ['artist_id', 'id', 'release_date'])
+        # set index of artists to id
+        artist_data.add_index('id', ['id'])
+        # sort artist by name
+        artist_data.sort('name')
+        # create db engine
+        engine = db_engine('127.0.0.1:3306', 'root', 'mysql')
+        # create db meta date table
+        db_create_tables(engine, drop_first = True)
+        # load them both into a db
+        artist_data.load_to_db(engine, 'artists')
+        album_data.load_to_db(engine, 'albums')
+        # merge them both into one super table
+        artist_data.merge(df = artists_data, left_on = artist_data, right_on = album_data, join_cols = 'id', col_sort_by = 'id', how = 'left')
 
 
 if __name__ == '__main__':

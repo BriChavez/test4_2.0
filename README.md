@@ -2,14 +2,14 @@
 
 #### By _**BriChavez**_
 
-#### _This code writes a class to load data, then uses it to read two spotify csvs_
+#### _This code writes a class to load data, then uses it to read two spotify CSVs_
 
 ## Technologies Used
 
-* _python_
-* _pandas_
-* _sql_
-* _cvs_
+* _Python_
+* _Pandas_
+* _Sql_
+* _Cvs_
 
 ## Description
 
@@ -18,9 +18,9 @@ _This code defines a super class to load data. it provides a template to add ind
 ## Setup/Installation Requirements
 
 * _Here is a link to the github https://github.com/BriChavez/test4_2.0.git_
-* _copy the like and clone the repo from your terminal_
-* _activate a virtualenv, install requirements.txt, and get_data.sh_
-* _run the code from your terminal using python3.7 main.py command_
+* _Copy the like and clone the repo from your terminal_
+* _Activate a virtualenv, install requirements.txt, and get_data.sh_
+* _Run the code from your terminal using python3.7 main.py command_
 
 
 ## Known Bugs
@@ -30,6 +30,6 @@ _This code defines a super class to load data. it provides a template to add ind
 
 ## License
 
-_if you see a way for me to improve my script, find any bugs, or just want to talk python, my email is brianachavez@gmail.com_
+_If you see a way for me to improve my script, find any bugs, or just want to talk python, my email is brianachavez@gmail.com_
 
-Copyright (c) _may22, 2022_ _BriChavez_
+Copyright (c) _May 22, 2022_ _BriChavez_

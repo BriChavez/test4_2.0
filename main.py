@@ -15,9 +15,9 @@ logger: logging.Logger = logging
 
 class DataLoader():
     def __init__(self, filepath, index = None) -> None:
+        """load a file into a csv"""
         df = pd.read_csv(filepath, header = 0)
-    # load a file into a csv
-    # set index if specified
+        # set index if specified
         if index is not None:
             df = pd.set_index(index)
         self.df = df

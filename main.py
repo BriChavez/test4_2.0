@@ -4,8 +4,8 @@ import logging
 import sys
 import warnings
 from logging import INFO
-import sqlalchemy as sa
 from sqlalchemy import MetaData, Table, Column, String, Numeric, DateTime
+import sqlalchemy as sa
 
 # setup logging and logger
 logging.basicConfig(format='[%(levelname)-5s][%(asctime)s][%(module)s:%(lineno)04d] : %(message)s',
@@ -31,7 +31,7 @@ class DataLoader():
         """bind info to our dataframe"""
         return self.df.info
 
-    def add_index(self, index_name="index") -> None:
+    def add_index(self, index_name="index", col_list="list") -> None:
         """create an index column"""
         # if our data doesn't already have one, this is a function that creates an index
         df = self.df
@@ -129,7 +129,7 @@ def main():
     # sort artist by name
     artist_data.sort('name')
     # create db engine
-    engine = db_engine('127.0.0.1:3306', 'root', 'mysql')
+    engine = db_engine(db_host="127.0.0.1:3306", db_user="root", db_pass="mysql")
     # create db meta date table
     db_create_tables(engine, drop_first = True)
     # load artists into a db
